@@ -24,6 +24,10 @@
     aimRate: 14,          // how quickly the hand turns to the cursor (1/s)
     wobble: 0.035,        // idle wobble in radians
     maxReach: 0.92,       // max reach as a fraction of the screen's shorter side
+    speed: 1,             // animation speed multiplier
+    shadow: true,         // drop shadow under the hand and stick
+    enabled: null,        // sprite file names to pick from (null = all)
+    keepStyle: false,     // true = keep the same hand when switching edges
   };
 
   function easeOutBack(t) {
@@ -68,6 +72,10 @@
 
     setCursor(x, y) { this.cursor.x = x; this.cursor.y = y; }
     setActive(on) { this.active = !!on; }
+    setOptions(opts) {
+      Object.assign(this.o, opts);
+      // a disabled hand that is currently out gets swapped at the next edge change
+    }
     toggle() { this.active = !this.active; return this.active; }
 
     _resize() {
@@ -116,12 +124,19 @@
         case 'right': return Math.PI;
       }
     }
+    _pool() {
+      const all = this.o.sprites.map((_, i) => i);
+      if (!this.o.enabled) return all;
+      const on = new Set(this.o.enabled);
+      const pool = all.filter((i) => on.has(this.o.sprites[i].file));
+      return pool.length ? pool : all;
+    }
     _pickStyle() {
-      const n = this.o.sprites.length;
-      if (n < 2) return 0;
-      let s;
-      do { s = Math.floor(Math.random() * n); } while (s === this.style);
-      return s;
+      const pool = this._pool();
+      if (this.o.keepStyle && pool.includes(this.style)) return this.style;
+      if (pool.length < 2) return pool[0];
+      const others = pool.filter((i) => i !== this.style);
+      return others[Math.floor(Math.random() * others.length)];
     }
     _spawn(edge) {
       this.edge = edge;
@@ -154,11 +169,11 @@
       }
 
       if (this.phase === 'entering') {
-        this.t = Math.min(1, this.t + dt / this.o.enterTime);
+        this.t = Math.min(1, this.t + dt * this.o.speed / this.o.enterTime);
         this.ext = easeOutBack(this.t);
         if (this.t >= 1) { this.phase = 'tracking'; this.ext = 1; }
       } else if (this.phase === 'leaving') {
-        this.t = Math.min(1, this.t + dt / this.o.leaveTime);
+        this.t = Math.min(1, this.t + dt * this.o.speed / this.o.leaveTime);
         this.ext = this._leaveFrom * (1 - easeInCubic(this.t));
         if (this.t >= 1) {
           this.ext = 0;
@@ -221,7 +236,7 @@
         g.addColorStop(0.45, '#c99a68');
         g.addColorStop(1, '#93673f');
         ctx.fillStyle = g;
-        ctx.shadowColor = 'rgba(0,0,0,0.25)';
+        ctx.shadowColor = this.o.shadow ? 'rgba(0,0,0,0.25)' : 'transparent';
         ctx.shadowBlur = 6;
         ctx.shadowOffsetY = 2;
         ctx.fillRect(0, -stickW / 2, len, stickW);
@@ -231,7 +246,7 @@
       ctx.save();
       ctx.translate(base.x, base.y);
       ctx.rotate(ang - spriteAngle);
-      ctx.shadowColor = 'rgba(0,0,0,0.28)';
+      ctx.shadowColor = this.o.shadow ? 'rgba(0,0,0,0.28)' : 'transparent';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetY = 3;
       ctx.drawImage(img, -bx * scale, -by * scale, spr.w * scale, spr.h * scale);
