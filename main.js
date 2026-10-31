@@ -1,15 +1,26 @@
 // Ultra Pointer: transparent, click-through, always-on-top overlay on every
 // display. A global shortcut toggles a hand on a stick that points at the cursor.
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
+const { Settings, DEFAULTS } = require('./settings');
 
-const SHORTCUT = process.env.ULTRA_POINTER_SHORTCUT || 'Alt+Shift+P';
 const TICK_MS = 1000 / 60;
+const HANDS = require('./assets/sprites/hands.json');
 
-let overlays = [];   // { win, display }
-let active = process.env.ULTRA_POINTER_AUTOSTART === '1';
+let settings;
+let overlays = [];        // { win, display }
+let settingsWin = null;
+let active = false;       // toggled by the shortcut
 let tray = null;
 let timer = null;
+let registered = null;    // currently registered accelerator
+let lastPoint = { x: 0, y: 0 };
+let lastMove = Date.now();
+
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', () => openSettings());
+
+// ---------- overlays ----------
 
 function createOverlay(display) {
   const { x, y, width, height } = display.bounds;
@@ -24,6 +35,7 @@ function createOverlay(display) {
     hasShadow: false,
     fullscreenable: false,
     enableLargerThanScreen: true,
+    show: false,
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -39,7 +51,10 @@ function createOverlay(display) {
   }
   win.setBounds({ x, y, width, height });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  win.showInactive();
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('settings', settings.get());
+    win.showInactive();
+  });
   return { win, display };
 }
 
@@ -50,48 +65,149 @@ function rebuildOverlays() {
 
 function tick() {
   const p = screen.getCursorScreenPoint();
+  const now = Date.now();
+  if (p.x !== lastPoint.x || p.y !== lastPoint.y) { lastMove = now; lastPoint = p; }
+  const idleLimit = settings.data.autoHideSeconds * 1000;
+  const idle = idleLimit > 0 && now - lastMove > idleLimit;
   for (const { win, display } of overlays) {
     if (win.isDestroyed()) continue;
     const b = display.bounds;
     const inside = p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
-    win.webContents.send('state', { x: p.x - b.x, y: p.y - b.y, active: active && inside });
+    win.webContents.send('state', { x: p.x - b.x, y: p.y - b.y, active: active && inside && !idle });
   }
 }
 
+// ---------- shortcut ----------
+
 function toggle() {
   active = !active;
+  lastMove = Date.now();
   updateTrayMenu();
 }
+
+function registerShortcut(accel) {
+  if (registered) globalShortcut.unregister(registered);
+  registered = null;
+  try {
+    if (accel && globalShortcut.register(accel, toggle)) { registered = accel; return true; }
+  } catch { /* invalid accelerator */ }
+  return false;
+}
+
+// ---------- settings ----------
+
+function broadcastSettings() {
+  const s = settings.get();
+  overlays.forEach(({ win }) => !win.isDestroyed() && win.webContents.send('settings', s));
+}
+
+function applyLoginItem() {
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    app.setLoginItemSettings({ openAtLogin: settings.data.launchAtLogin });
+  }
+}
+
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
+  settingsWin = new BrowserWindow({
+    width: 760,
+    height: 720,
+    minWidth: 560,
+    minHeight: 520,
+    title: 'Ultra Pointer Settings',
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.once('ready-to-show', () => settingsWin.show());
+  if (process.platform === 'darwin' && app.dock) app.dock.show();
+  settingsWin.on('closed', () => {
+    settingsWin = null;
+    if (process.platform === 'darwin' && app.dock) app.dock.hide();
+    registerShortcut(settings.data.shortcut); // in case the window closed mid-recording
+  });
+}
+
+ipcMain.handle('settings:get', () => ({
+  settings: settings.get(),
+  defaults: DEFAULTS,
+  hands: HANDS,
+  platform: process.platform,
+  version: app.getVersion(),
+  shortcutOk: registered === settings.data.shortcut,
+}));
+
+ipcMain.handle('settings:update', (_e, patch) => {
+  if ('shortcut' in patch) {
+    if (!registerShortcut(patch.shortcut)) {
+      registerShortcut(settings.data.shortcut);
+      return { ok: false, error: `“${patch.shortcut}” can't be used. Another app may already own it.`, settings: settings.get() };
+    }
+  }
+  const s = settings.update(patch);
+  if ('launchAtLogin' in patch) applyLoginItem();
+  broadcastSettings();
+  updateTrayMenu();
+  return { ok: true, settings: s };
+});
+
+ipcMain.handle('settings:reset', () => {
+  const s = settings.reset();
+  registerShortcut(s.shortcut);
+  applyLoginItem();
+  broadcastSettings();
+  updateTrayMenu();
+  return { ok: true, settings: s };
+});
+
+// While the user records a new shortcut, the old one must not fire.
+ipcMain.handle('shortcut:suspend', () => { if (registered) globalShortcut.unregister(registered); registered = null; });
+ipcMain.handle('shortcut:resume', () => registerShortcut(settings.data.shortcut));
+
+ipcMain.handle('preview', () => { if (!active) toggle(); });
+
+// ---------- tray ----------
 
 function updateTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: active ? 'Schowaj rękę' : 'Pokaż rękę', accelerator: SHORTCUT, click: toggle },
+    { label: active ? 'Hide hand' : 'Show hand', accelerator: registered || undefined, click: toggle },
+    { label: 'Settings…', click: openSettings },
     { type: 'separator' },
-    { label: 'Zakończ', role: 'quit' },
+    { label: 'Quit Ultra Pointer', role: 'quit' },
   ]));
-  tray.setToolTip(`Ultra Pointer (${SHORTCUT})`);
+  tray.setToolTip(`Ultra Pointer (${registered || 'no shortcut'})`);
 }
 
 app.whenReady().then(() => {
+  settings = new Settings(app.getPath('userData'));
   if (process.platform === 'darwin' && app.dock) app.dock.hide();
+  if (process.env.ULTRA_POINTER_AUTOSTART === '1') active = true;
 
   rebuildOverlays();
   screen.on('display-added', rebuildOverlays);
   screen.on('display-removed', rebuildOverlays);
   screen.on('display-metrics-changed', rebuildOverlays);
 
-  if (!globalShortcut.register(SHORTCUT, toggle)) {
-    console.error(`Nie udało się zarejestrować skrótu ${SHORTCUT} (zajęty?)`);
+  if (!registerShortcut(settings.data.shortcut)) {
+    console.error(`Could not register shortcut ${settings.data.shortcut}`);
   }
 
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
-  if (process.platform === 'darwin') icon.setTemplateImage(false);
   tray = new Tray(icon);
-  tray.on('click', toggle);
+  if (process.platform === 'win32') tray.on('click', toggle);
   updateTrayMenu();
 
   timer = setInterval(tick, TICK_MS);
+
+  // A tray-only app is easy to miss: show settings on the first launch,
+  // or right away when the shortcut could not be registered.
+  if (settings.isFirstRun || !registered) openSettings();
 });
 
 app.on('will-quit', () => {
@@ -99,5 +215,5 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-// Keep running with no focused windows (we live in the tray).
+// Keep running when the settings window closes (we live in the tray).
 app.on('window-all-closed', (e) => e.preventDefault());

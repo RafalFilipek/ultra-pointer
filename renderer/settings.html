@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file:; script-src 'self'; style-src 'self'">
+<title>Ultra Pointer Settings</title>
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Ultra Pointer</h1>
+    <p class="sub">A hand on a stick that points at your cursor. Press the shortcut anywhere to show or hide it.</p>
+  </div>
+  <span class="version" id="version"></span>
+</header>
+
+<main>
+  <section class="card" aria-labelledby="h-shortcut">
+    <h2 id="h-shortcut">Shortcut</h2>
+    <div class="row">
+      <div class="keys" id="shortcut" aria-live="polite"></div>
+      <button type="button" id="record">Change…</button>
+    </div>
+    <p class="hint" id="shortcut-hint">Use at least one modifier key (⌘, Ctrl, Alt or Shift). Press Esc to cancel.</p>
+    <p class="error" id="shortcut-error" hidden></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-size">
+    <h2 id="h-size">Size and motion</h2>
+    <div class="preview" id="preview" title="Move the mouse here to try your settings">
+      <canvas id="preview-canvas"></canvas>
+      <span class="preview-label">Move the mouse here to try it</span>
+    </div>
+    <label class="slider" for="handSize">
+      <span>Hand size</span>
+      <input type="range" id="handSize" min="100" max="480" step="10">
+      <output id="handSize-out"></output>
+    </label>
+    <label class="slider" for="speed">
+      <span>Animation speed</span>
+      <input type="range" id="speed" min="0.4" max="2.5" step="0.1">
+      <output id="speed-out"></output>
+    </label>
+    <label class="slider" for="switchMargin">
+      <span>Edge switching</span>
+      <input type="range" id="switchMargin" min="0" max="400" step="10">
+      <output id="switchMargin-out"></output>
+    </label>
+    <p class="hint">Edge switching sets how much closer another screen edge must be before the hand hides and a new one comes out from there.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-hands">
+    <div class="card-head">
+      <h2 id="h-hands">Hands</h2>
+      <div class="mini-actions">
+        <button type="button" class="link" id="hands-all">Select all</button>
+        <button type="button" class="link" id="hands-one">Only realistic</button>
+      </div>
+    </div>
+    <p class="hint" id="hands-count"></p>
+    <div class="hands" id="hands"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-behaviour">
+    <h2 id="h-behaviour">Behaviour</h2>
+    <label class="check" for="keepStyle"><input type="checkbox" id="keepStyle"><span>Keep the same hand when it switches edges<small>Off: a random hand comes out each time.</small></span></label>
+    <label class="check" for="wobble"><input type="checkbox" id="wobble"><span>Idle wobble<small>The hand sways gently while it points.</small></span></label>
+    <label class="check" for="shadow"><input type="checkbox" id="shadow"><span>Drop shadow</span></label>
+    <label class="slider" for="autoHideSeconds">
+      <span>Hide when the mouse stops</span>
+      <input type="range" id="autoHideSeconds" min="0" max="60" step="1">
+      <output id="autoHideSeconds-out"></output>
+    </label>
+    <label class="check" for="launchAtLogin"><input type="checkbox" id="launchAtLogin"><span>Open Ultra Pointer at login</span></label>
+  </section>
+
+  <footer class="bottom">
+    <button type="button" id="show">Show the hand now</button>
+    <button type="button" class="ghost" id="reset">Restore defaults</button>
+  </footer>
+</main>
+
+<script src="sprites.js"></script>
+<script src="hand-engine.js"></script>
+<script src="settings-ui.js"></script>
+</body>
+</html>
