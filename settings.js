@@ -14,6 +14,7 @@ const DEFAULTS = {
   autoHideSeconds: 0,     // hide when the mouse is still this long (0 = never)
   pokeOnClick: false,     // the hand jabs at the cursor on every mouse click (needs a global input hook)
   launchAtLogin: false,
+  autoUpdate: true,       // check GitHub Releases for new versions in the background
 };
 
 const LIMITS = {

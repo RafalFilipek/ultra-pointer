@@ -15,4 +15,7 @@ contextBridge.exposeInMainWorld('ultraPointer', {
   getPokeStatus: () => ipcRenderer.invoke('poke:status'),
   onPokeStatus: (cb) => ipcRenderer.on('poke-status', (_e, s) => cb(s)),
   openPokePermissions: () => ipcRenderer.invoke('poke:open-permissions'),
+  getUpdateStatus: () => ipcRenderer.invoke('update:status'),
+  updateAction: () => ipcRenderer.invoke('update:action'),
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_e, s) => cb(s)),
 });

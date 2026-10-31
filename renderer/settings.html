@@ -80,6 +80,15 @@
     <label class="check" for="launchAtLogin"><input type="checkbox" id="launchAtLogin"><span>Open Ultra Pointer at login</span></label>
   </section>
 
+  <section class="card" aria-labelledby="h-updates" id="updates-card">
+    <h2 id="h-updates">Updates</h2>
+    <label class="check" for="autoUpdate"><input type="checkbox" id="autoUpdate"><span>Check for updates automatically<small id="update-how"></small></span></label>
+    <div class="status-row">
+      <p class="hint" id="update-msg" role="status"></p>
+      <button type="button" id="update-btn">Check now</button>
+    </div>
+  </section>
+
   <footer class="bottom">
     <button type="button" id="show">Show the hand now</button>
     <button type="button" class="ghost" id="reset">Restore defaults</button>

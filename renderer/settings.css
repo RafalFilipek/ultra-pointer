@@ -43,7 +43,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
 .check input { margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px; }
 .status-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-left: 26px; }
-.status-row .error { flex: 1 1 260px; }
+.status-row .error, .status-row .hint { flex: 1 1 260px; }
 .check small { display: block; color: var(--muted); font-size: 12px; }
 .preview { position: relative; height: 230px; border-radius: 10px; overflow: hidden; cursor: crosshair;
   background: var(--stage) radial-gradient(var(--dots) 1px, transparent 1.5px) 0 0 / 18px 18px; }
