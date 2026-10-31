@@ -1,0 +1,22 @@
+{
+  "name": "ultra-pointer",
+  "version": "0.1.0",
+  "description": "Ręka na patyku, która wysuwa się z krawędzi ekranu i pokazuje palcem na kursor.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.ultrapointer.app",
+    "productName": "Ultra Pointer",
+    "files": ["main.js", "preload.js", "renderer/**", "assets/sprites/**", "assets/tray.png"],
+    "mac": { "target": "dmg", "extendInfo": { "LSUIElement": true } },
+    "win": { "target": "nsis" }
+  }
+}

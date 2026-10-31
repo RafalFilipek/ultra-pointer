@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultra Pointer demo</title>
+<style>
+  :root { --bg: #eef1f6; --fg: #1c2230; --muted: #5d6678; --card: #ffffffcc; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #151a24; --fg: #e8ecf3; --muted: #9aa4b6; --card: #1f2633cc; } }
+  :root[data-theme="dark"] { --bg: #151a24; --fg: #e8ecf3; --muted: #9aa4b6; --card: #1f2633cc; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; }
+  .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(420px, calc(100vw - 32px));
+    background: var(--card); backdrop-filter: blur(8px); border-radius: 14px; padding: 18px 20px; box-shadow: 0 6px 30px #0002; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { margin: 6px 0; color: var(--muted); }
+  kbd { background: #8882; border-radius: 5px; padding: 1px 6px; font: 13px ui-monospace, monospace; color: var(--fg); }
+  button { margin-top: 10px; font: inherit; padding: 8px 14px; border-radius: 9px; border: 0; background: #3b6cf6; color: #fff; cursor: pointer; }
+  #style { color: var(--fg); font-weight: 600; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="panel">
+  <h1>Ultra Pointer</h1>
+  <p>Wciśnij <kbd>H</kbd> (albo przycisk), żeby wysunąć rękę. Ruszaj myszą po ekranie; przy innej krawędzi ręka się chowa i wychodzi nowa.</p>
+  <p>Teraz: <span id="style">schowana</span></p>
+  <button id="toggle">Pokaż rękę</button>
+</div>
+<script src="../renderer/sprites.js"></script>
+<script src="../renderer/hand-engine.js"></script>
+<script>
+  const engine = new HandEngine(document.getElementById('c'), { spriteBase: '../assets/sprites/' });
+  const btn = document.getElementById('toggle'), label = document.getElementById('style');
+  const sync = () => { btn.textContent = engine.active ? 'Schowaj rękę' : 'Pokaż rękę'; if (!engine.active) label.textContent = 'schowana'; };
+  engine.onStyleChange = (s) => { label.textContent = s.name; };
+  const move = (e) => engine.setCursor(e.clientX, e.clientY);
+  addEventListener('pointermove', move);
+  addEventListener('pointerdown', move);
+  addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'h') { engine.toggle(); sync(); } });
+  btn.addEventListener('click', (e) => { e.stopPropagation(); engine.toggle(); sync(); });
+</script>
+</body>
+</html>
