@@ -67,6 +67,11 @@
     <label class="check" for="keepStyle"><input type="checkbox" id="keepStyle"><span>Keep the same hand when it switches edges<small>Off: a random hand comes out each time.</small></span></label>
     <label class="check" for="wobble"><input type="checkbox" id="wobble"><span>Idle wobble<small>The hand sways gently while it points.</small></span></label>
     <label class="check" for="shadow"><input type="checkbox" id="shadow"><span>Drop shadow</span></label>
+    <label class="check" for="pokeOnClick"><input type="checkbox" id="pokeOnClick"><span>Poke when you click<small>The hand jabs at the cursor every time you press a mouse button. Click in the preview above to try it.</small></span></label>
+    <div class="status-row" id="poke-status" hidden>
+      <p class="error" id="poke-msg" role="status"></p>
+      <button type="button" id="poke-permissions" hidden>Open Accessibility settings</button>
+    </div>
     <label class="slider" for="autoHideSeconds">
       <span>Hide when the mouse stops</span>
       <input type="range" id="autoHideSeconds" min="0" max="60" step="1">

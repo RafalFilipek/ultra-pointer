@@ -1,8 +1,9 @@
 // Ultra Pointer: transparent, click-through, always-on-top overlay on every
 // display. A global shortcut toggles a hand on a stick that points at the cursor.
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, ipcMain, shell, systemPreferences } = require('electron');
 const path = require('path');
 const { Settings, DEFAULTS } = require('./settings');
+const { ClickHook } = require('./click-hook');
 
 const TICK_MS = 1000 / 60;
 const HANDS = require('./assets/sprites/hands.json');
@@ -16,6 +17,7 @@ let timer = null;
 let registered = null;    // currently registered accelerator
 let lastPoint = { x: 0, y: 0 };
 let lastMove = Date.now();
+let clickHook = null;
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => openSettings());
@@ -75,6 +77,29 @@ function tick() {
     const inside = p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
     win.webContents.send('state', { x: p.x - b.x, y: p.y - b.y, active: active && inside && !idle });
   }
+}
+
+// ---------- poke on click ----------
+
+const ACCESSIBILITY_PANE = 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility';
+
+// Send the poke only to the display the cursor is on; the renderer ignores it while the hand is hidden.
+function poke() {
+  if (!active) return;
+  const p = screen.getCursorScreenPoint();
+  lastMove = Date.now(); // a click counts as activity for auto-hide
+  for (const { win, display } of overlays) {
+    if (win.isDestroyed()) continue;
+    const b = display.bounds;
+    if (p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height) {
+      win.webContents.send('state', { x: p.x - b.x, y: p.y - b.y, active: true });
+      win.webContents.send('poke');
+    }
+  }
+}
+
+function sendPokeStatus(info) {
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('poke-status', info);
 }
 
 // ---------- shortcut ----------
@@ -151,6 +176,7 @@ ipcMain.handle('settings:update', (_e, patch) => {
   }
   const s = settings.update(patch);
   if ('launchAtLogin' in patch) applyLoginItem();
+  if ('pokeOnClick' in patch) clickHook.setEnabled(s.pokeOnClick);
   broadcastSettings();
   updateTrayMenu();
   return { ok: true, settings: s };
@@ -160,6 +186,7 @@ ipcMain.handle('settings:reset', () => {
   const s = settings.reset();
   registerShortcut(s.shortcut);
   applyLoginItem();
+  clickHook.setEnabled(s.pokeOnClick);
   broadcastSettings();
   updateTrayMenu();
   return { ok: true, settings: s };
@@ -170,6 +197,11 @@ ipcMain.handle('shortcut:suspend', () => { if (registered) globalShortcut.unregi
 ipcMain.handle('shortcut:resume', () => registerShortcut(settings.data.shortcut));
 
 ipcMain.handle('preview', () => { if (!active) toggle(); });
+
+ipcMain.handle('poke:status', () => clickHook.info());
+ipcMain.handle('poke:open-permissions', () => {
+  if (process.platform === 'darwin') shell.openExternal(ACCESSIBILITY_PANE);
+});
 
 // ---------- tray ----------
 
@@ -188,6 +220,14 @@ app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
   if (process.platform === 'darwin' && app.dock) app.dock.hide();
   if (process.env.ULTRA_POINTER_AUTOSTART === '1') active = true;
+
+  clickHook = new ClickHook({
+    onClick: poke,
+    onStatus: sendPokeStatus,
+    isTrusted: (prompt) => systemPreferences.isTrustedAccessibilityClient(prompt),
+  });
+  // Don't pop the macOS permission prompt on launch; only when the user turns the option on.
+  clickHook.setEnabled(settings.data.pokeOnClick, { prompt: false });
 
   rebuildOverlays();
   screen.on('display-added', rebuildOverlays);
@@ -213,6 +253,7 @@ app.whenReady().then(() => {
 app.on('will-quit', () => {
   clearInterval(timer);
   globalShortcut.unregisterAll();
+  if (clickHook) clickHook.dispose();
 });
 
 // Keep running when the settings window closes (we live in the tray).

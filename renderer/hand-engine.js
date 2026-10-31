@@ -8,6 +8,7 @@
  *   const engine = new HandEngine(canvas, { spriteBase: '../assets/sprites/' });
  *   engine.setCursor(x, y);      // CSS pixels, relative to the canvas
  *   engine.setActive(true|false) // show / hide (hide = retract)
+ *   engine.poke()                // jab at the cursor (e.g. on a mouse click)
  */
 (function () {
   const EDGES = ['top', 'right', 'bottom', 'left'];
@@ -28,7 +29,20 @@
     shadow: true,         // drop shadow under the hand and stick
     enabled: null,        // sprite file names to pick from (null = all)
     keepStyle: false,     // true = keep the same hand when switching edges
+    pokeDepth: 28,        // how far past the cursor the finger jabs on poke() (px at 210 px hand height)
+    pokeTime: 0.32,       // seconds for a whole poke (jab + return)
+    pokeRing: true,       // flash a small ring where the finger lands
   };
+
+  const POKE_HIT = 0.3;   // fraction of the poke spent on the jab; the rest is the return
+
+  // Poke offset as a fraction of pokeDepth: fast jab out, softer return. 0 at t=0 and t=1.
+  function pokeCurve(t) {
+    if (t <= 0 || t >= 1) return 0;
+    if (t < POKE_HIT) { const k = t / POKE_HIT; return 1 - Math.pow(1 - k, 3); }
+    const k = (t - POKE_HIT) / (1 - POKE_HIT);
+    return 1 - (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  }
 
   function easeOutBack(t) {
     const c1 = 1.5, c3 = c1 + 1;
@@ -64,6 +78,8 @@
       this.angle = 0;
       this.time = 0;
       this.onStyleChange = null;
+      this.pokeT = null;       // progress of the current poke (null = not poking)
+      this.rings = [];         // { x, y, age } flashes where pokes landed
       this._resize();
       addEventListener('resize', () => this._resize());
       this._last = performance.now();
@@ -77,6 +93,13 @@
       // a disabled hand that is currently out gets swapped at the next edge change
     }
     toggle() { this.active = !this.active; return this.active; }
+    // Jab at the cursor. Ignored unless the hand is out; a new poke restarts a running one.
+    poke() {
+      if (!this.active || !(this.phase === 'tracking' || (this.phase === 'entering' && this.t > 0.6))) return false;
+      this.pokeT = 0;
+      this._ringPending = true;
+      return true;
+    }
 
     _resize() {
       const dpr = window.devicePixelRatio || 1;
@@ -154,6 +177,16 @@
 
     _update(dt) {
       this.time += dt;
+      for (const r of this.rings) r.age += dt * this.o.speed;
+      this.rings = this.rings.filter((r) => r.age < 0.45);
+      if (this.pokeT !== null) {
+        this.pokeT += dt * this.o.speed / this.o.pokeTime;
+        if (this._ringPending && this.pokeT >= POKE_HIT) {
+          this._ringPending = false;
+          if (this.o.pokeRing) this.rings.push({ x: this.cursor.x, y: this.cursor.y, age: 0 });
+        }
+        if (this.pokeT >= 1 || this.phase === 'leaving' || this.phase === 'hidden') { this.pokeT = null; this._ringPending = false; }
+      }
       const target = this._nearestEdge();
 
       if (this.phase === 'hidden') {
@@ -200,6 +233,7 @@
     _draw() {
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.w, this.h);
+      this._drawRings();
       if (!this.edge || this.ext <= 0.001) return;
       const spr = this.o.sprites[this.style];
       const img = this.images[this.style];
@@ -214,7 +248,8 @@
       const ang = this.angle + Math.sin(this.time * 2.3) * this.o.wobble * (this.phase === 'tracking' ? 1 : 0.3);
       const dir = { x: Math.cos(ang), y: Math.sin(ang) };
       const maxReach = Math.min(this.w, this.h) * this.o.maxReach;
-      const want = clamp(Math.hypot(this.cursor.x - a.x, this.cursor.y - a.y) - this.o.gap, handLen * 0.55, maxReach);
+      const poke = this.pokeT === null ? 0 : pokeCurve(this.pokeT) * (this.o.gap + this.o.pokeDepth * this.o.handHeight / 210);
+      const want = clamp(Math.hypot(this.cursor.x - a.x, this.cursor.y - a.y) - this.o.gap, handLen * 0.55, maxReach) + poke;
 
       // Fingertip distance from the anchor along the stick; at ext=0 the whole hand is off-screen.
       const tipDist = -8 + (want + 8) * this.ext;
@@ -253,6 +288,25 @@
       ctx.restore();
     }
 
+    _drawRings() {
+      if (!this.rings.length) return;
+      const ctx = this.ctx;
+      const size = this.o.handHeight / 210;
+      ctx.save();
+      for (const r of this.rings) {
+        const k = r.age / 0.45;
+        const radius = (6 + 22 * (1 - Math.pow(1 - k, 2))) * size;
+        const alpha = 1 - k;
+        ctx.lineWidth = 3 * size;
+        ctx.strokeStyle = `rgba(0,0,0,${0.35 * alpha})`;
+        ctx.beginPath(); ctx.arc(r.x, r.y, radius + 1.5 * size, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2 * size;
+        ctx.strokeStyle = `rgba(255,255,255,${0.95 * alpha})`;
+        ctx.beginPath(); ctx.arc(r.x, r.y, radius, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     _frame(ts) {
       const dt = Math.min(0.05, (ts - this._last) / 1000);
       this._last = ts;
@@ -262,5 +316,6 @@
     }
   }
 
+  HandEngine.pokeCurve = pokeCurve;
   window.HandEngine = HandEngine;
 })();

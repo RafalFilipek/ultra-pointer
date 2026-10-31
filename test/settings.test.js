@@ -45,7 +45,7 @@ test('every sprite listed in hands.json exists and matches renderer/sprites.js',
 test('all JavaScript files parse', () => {
   const { execFileSync } = require('child_process');
   const root = path.join(__dirname, '..');
-  for (const f of ['main.js', 'preload.js', 'settings.js', 'renderer/hand-engine.js', 'renderer/overlay.js', 'renderer/settings-ui.js', 'renderer/sprites.js']) {
+  for (const f of ['main.js', 'preload.js', 'settings.js', 'click-hook.js', 'renderer/hand-engine.js', 'renderer/overlay.js', 'renderer/settings-ui.js', 'renderer/sprites.js']) {
     execFileSync(process.execPath, ['--check', path.join(root, f)]);
   }
 });

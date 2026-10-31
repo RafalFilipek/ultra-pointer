@@ -122,7 +122,24 @@ async function save(patch) {
   const res = await api.updateSettings(patch);
   state.settings = res.settings;
   applyPreview(state.settings);
+  if ('pokeOnClick' in patch) renderPokeStatus(await api.getPokeStatus());
 }
+
+// ---------- poke on click ----------
+
+function renderPokeStatus({ status, error }) {
+  const box = $('poke-status'), msg = $('poke-msg'), btn = $('poke-permissions');
+  const on = state && state.settings.pokeOnClick;
+  if (!on || status === 'running' || status === 'off') { box.hidden = true; return; }
+  box.hidden = false;
+  btn.hidden = status !== 'needs-permission';
+  msg.textContent = status === 'needs-permission'
+    ? 'Ultra Pointer needs Accessibility access to see your clicks. Turn it on for Ultra Pointer in System Settings → Privacy & Security → Accessibility. Poking starts as soon as access is granted.'
+    : `Clicks can't be detected on this computer${error ? ` (${error})` : ''}.`;
+}
+
+$('poke-permissions').addEventListener('click', () => api.openPokePermissions());
+api.onPokeStatus(renderPokeStatus);
 
 // ---------- hands ----------
 
@@ -209,6 +226,7 @@ function setupPreview() {
     preview.setActive(true);
   });
   box.addEventListener('pointerleave', () => preview.setActive(false));
+  box.addEventListener('pointerdown', () => { if (state.settings.pokeOnClick) preview.poke(); });
   applyPreview(state.settings);
 }
 
@@ -224,10 +242,11 @@ function setupPreview() {
     $('shortcut-error').hidden = false;
   }
   ['handSize', 'speed', 'switchMargin', 'autoHideSeconds'].forEach(bindSlider);
-  ['keepStyle', 'wobble', 'shadow', 'launchAtLogin'].forEach(bindCheck);
+  ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin'].forEach(bindCheck);
   if (state.platform === 'linux') $('launchAtLogin').closest('label').hidden = true;
   renderHands();
   setupPreview();
+  renderPokeStatus(await api.getPokeStatus());
 
   $('show').addEventListener('click', () => api.preview());
   $('reset').addEventListener('click', async () => {
@@ -237,9 +256,10 @@ function setupPreview() {
       $(id).value = state.settings[id];
       $(id + '-out').textContent = FORMAT[id]($(id).value);
     });
-    ['keepStyle', 'wobble', 'shadow', 'launchAtLogin'].forEach((id) => { $(id).checked = !!state.settings[id]; });
+    ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin'].forEach((id) => { $(id).checked = !!state.settings[id]; });
     renderKeys($('shortcut'), state.settings.shortcut);
     renderHands();
     applyPreview(state.settings);
+    renderPokeStatus(await api.getPokeStatus());
   });
 })();
