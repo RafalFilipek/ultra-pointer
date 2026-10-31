@@ -141,6 +141,36 @@ function renderPokeStatus({ status, error }) {
 $('poke-permissions').addEventListener('click', () => api.openPokePermissions());
 api.onPokeStatus(renderPokeStatus);
 
+// ---------- updates ----------
+
+function renderUpdate(u) {
+  if (u.mode === 'off') {
+    $('autoUpdate').closest('label').hidden = true;
+    $('update-btn').hidden = true;
+    $('update-msg').textContent = 'Updates are checked only in the installed app.';
+    return;
+  }
+  $('update-how').textContent = u.mode === 'install'
+    ? 'New versions download in the background and install when you quit Ultra Pointer.'
+    : 'You get a notification with a download link when a new version is out.';
+  const btn = $('update-btn'), msg = $('update-msg');
+  btn.disabled = u.status === 'checking' || u.status === 'downloading';
+  btn.textContent = 'Check now';
+  msg.classList.remove('error');
+  switch (u.status) {
+    case 'checking': msg.textContent = 'Checking for updates…'; break;
+    case 'up-to-date': msg.textContent = `You have the latest version (v${state.version}).`; break;
+    case 'downloading': msg.textContent = `Downloading version ${u.version}… ${u.percent}%`; break;
+    case 'ready': msg.textContent = `Version ${u.version} is ready. It installs when you quit.`; btn.textContent = 'Restart now'; break;
+    case 'available': msg.textContent = `Version ${u.version} is available.`; btn.textContent = 'Download…'; break;
+    case 'error': msg.textContent = `Couldn't check for updates${u.error ? ` (${u.error})` : ''}.`; msg.classList.add('error'); break;
+    default: msg.textContent = `Version ${state.version}.`;
+  }
+}
+
+$('update-btn').addEventListener('click', async () => renderUpdate(await api.updateAction()));
+api.onUpdateStatus(renderUpdate);
+
 // ---------- hands ----------
 
 function enabledSet() {
@@ -242,11 +272,12 @@ function setupPreview() {
     $('shortcut-error').hidden = false;
   }
   ['handSize', 'speed', 'switchMargin', 'autoHideSeconds'].forEach(bindSlider);
-  ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin'].forEach(bindCheck);
+  ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin', 'autoUpdate'].forEach(bindCheck);
   if (state.platform === 'linux') $('launchAtLogin').closest('label').hidden = true;
   renderHands();
   setupPreview();
   renderPokeStatus(await api.getPokeStatus());
+  renderUpdate(await api.getUpdateStatus());
 
   $('show').addEventListener('click', () => api.preview());
   $('reset').addEventListener('click', async () => {
@@ -256,7 +287,7 @@ function setupPreview() {
       $(id).value = state.settings[id];
       $(id + '-out').textContent = FORMAT[id]($(id).value);
     });
-    ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin'].forEach((id) => { $(id).checked = !!state.settings[id]; });
+    ['keepStyle', 'wobble', 'shadow', 'pokeOnClick', 'launchAtLogin', 'autoUpdate'].forEach((id) => { $(id).checked = !!state.settings[id]; });
     renderKeys($('shortcut'), state.settings.shortcut);
     renderHands();
     applyPreview(state.settings);

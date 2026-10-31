@@ -28,7 +28,8 @@ icon to change:
 - hand size, animation speed and how eagerly the hand switches edges (with a live preview),
 - keep the same hand when switching edges, idle wobble, drop shadow,
 - **poke on click**: the hand jabs at the cursor every time you press a mouse button,
-- auto-hide when the mouse stops for a while, and open at login.
+- auto-hide when the mouse stops for a while, and open at login,
+- automatic update checks (on by default) and a **Check now** button.
 
 Settings are saved to `settings.json` in the app's user-data folder.
 
@@ -43,6 +44,22 @@ runs while the option is on. Only mouse button presses are used; nothing is reco
   The app isn't signed with a developer ID yet, so after installing a new version macOS may treat it
   as a different app: if poking stops working, remove Ultra Pointer from that list and add it again.
 - **Windows** needs no extra permission.
+
+### Updates
+
+The installed app checks [Releases](https://github.com/RafalFilipek/ultra-pointer/releases) a few
+seconds after launch and then every 6 hours (turn it off in Settings → Updates; **Check for updates**
+in the tray menu works either way).
+
+- **Windows** updates itself: the new version downloads in the background and installs when you quit
+  Ultra Pointer, or right away with **Restart to update** in the tray menu or Settings.
+- **macOS** only tells you: a notification and a **Download** item in the tray open the release page,
+  and you install the new `.dmg` by hand. macOS (Squirrel.Mac) only installs updates for apps signed
+  with an Apple Developer ID, and Ultra Pointer is ad-hoc signed for now. Once the app is signed and
+  notarized, switching macOS to real auto-install is a one-line change in `updater.js`.
+
+Updates are read from the public GitHub release feed (`latest.yml` / `latest-mac.yml`, which the release
+workflow already uploads), so they only work while the releases are publicly reachable.
 
 ## Develop
 
@@ -59,6 +76,7 @@ npm run dist       # build installers locally into dist/
 
 - `main.js`: overlay windows, global shortcut, tray, settings window, cursor polling (60 fps).
 - `settings.js`: settings defaults, validation and storage.
+- `updater.js`: update checks against GitHub Releases (electron-updater).
 - `click-hook.js`: global mouse-click listener for poke on click (macOS permission handling included).
 - `renderer/hand-engine.js`: the hand itself (edge choice, slide in/out, aiming, style swaps).
 - `renderer/settings.html`, `settings-ui.js`, `settings.css`: the settings window.

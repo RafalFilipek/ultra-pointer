@@ -1,9 +1,10 @@
 // Ultra Pointer: transparent, click-through, always-on-top overlay on every
 // display. A global shortcut toggles a hand on a stick that points at the cursor.
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, ipcMain, shell, systemPreferences } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, nativeImage, ipcMain, shell, systemPreferences, Notification } = require('electron');
 const path = require('path');
 const { Settings, DEFAULTS } = require('./settings');
 const { ClickHook } = require('./click-hook');
+const { Updater, updateMode } = require('./updater');
 
 const TICK_MS = 1000 / 60;
 const HANDS = require('./assets/sprites/hands.json');
@@ -18,6 +19,7 @@ let registered = null;    // currently registered accelerator
 let lastPoint = { x: 0, y: 0 };
 let lastMove = Date.now();
 let clickHook = null;
+let updater = null;
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => openSettings());
@@ -102,6 +104,20 @@ function sendPokeStatus(info) {
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('poke-status', info);
 }
 
+// ---------- updates ----------
+
+function onUpdateChange(info) {
+  updateTrayMenu();
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('update-status', info);
+}
+
+function showNotification(title, body, onClick) {
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title, body, silent: true });
+  n.on('click', onClick);
+  n.show();
+}
+
 // ---------- shortcut ----------
 
 function toggle() {
@@ -177,6 +193,7 @@ ipcMain.handle('settings:update', (_e, patch) => {
   const s = settings.update(patch);
   if ('launchAtLogin' in patch) applyLoginItem();
   if ('pokeOnClick' in patch) clickHook.setEnabled(s.pokeOnClick);
+  if ('autoUpdate' in patch) updater.setAutoCheck(s.autoUpdate);
   broadcastSettings();
   updateTrayMenu();
   return { ok: true, settings: s };
@@ -187,6 +204,7 @@ ipcMain.handle('settings:reset', () => {
   registerShortcut(s.shortcut);
   applyLoginItem();
   clickHook.setEnabled(s.pokeOnClick);
+  updater.setAutoCheck(s.autoUpdate);
   broadcastSettings();
   updateTrayMenu();
   return { ok: true, settings: s };
@@ -203,13 +221,28 @@ ipcMain.handle('poke:open-permissions', () => {
   if (process.platform === 'darwin') shell.openExternal(ACCESSIBILITY_PANE);
 });
 
+ipcMain.handle('update:status', () => updater.info());
+ipcMain.handle('update:action', () => { updater.primaryAction(); return updater.info(); });
+
 // ---------- tray ----------
+
+function updateMenuItems() {
+  if (!updater || updater.mode === 'off') return [];
+  const { status, version, percent } = updater.info();
+  const act = () => updater.primaryAction();
+  if (status === 'ready') return [{ label: `Restart to update to ${version}`, click: act }];
+  if (status === 'available') return [{ label: `Download Ultra Pointer ${version}…`, click: act }];
+  if (status === 'downloading') return [{ label: `Downloading update… ${percent}%`, enabled: false }];
+  if (status === 'checking') return [{ label: 'Checking for updates…', enabled: false }];
+  return [{ label: 'Check for updates', click: act }];
+}
 
 function updateTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: active ? 'Hide hand' : 'Show hand', accelerator: registered || undefined, click: toggle },
     { label: 'Settings…', click: openSettings },
+    ...updateMenuItems(),
     { type: 'separator' },
     { label: 'Quit Ultra Pointer', role: 'quit' },
   ]));
@@ -228,6 +261,14 @@ app.whenReady().then(() => {
   });
   // Don't pop the macOS permission prompt on launch; only when the user turns the option on.
   clickHook.setEnabled(settings.data.pokeOnClick, { prompt: false });
+
+  updater = new Updater({
+    mode: updateMode(process.platform, app.isPackaged),
+    onChange: onUpdateChange,
+    notify: showNotification,
+    openUrl: (url) => shell.openExternal(url),
+  });
+  updater.setAutoCheck(settings.data.autoUpdate);
 
   rebuildOverlays();
   screen.on('display-added', rebuildOverlays);
@@ -254,6 +295,7 @@ app.on('will-quit', () => {
   clearInterval(timer);
   globalShortcut.unregisterAll();
   if (clickHook) clickHook.dispose();
+  if (updater) updater.dispose();
 });
 
 // Keep running when the settings window closes (we live in the tray).
