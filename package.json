@@ -78,7 +78,7 @@
         "provider": "github",
         "owner": "RafalFilipek",
         "repo": "ultra-pointer",
-        "releaseType": "release"
+        "releaseType": "draft"
       }
     ]
   },

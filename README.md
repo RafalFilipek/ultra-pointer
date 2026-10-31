@@ -61,5 +61,8 @@ npm version minor            # bumps package.json and creates the tag, e.g. v0.3
 git push --follow-tags
 ```
 
-The workflow builds the macOS (arm64 + x64) and Windows (x64 + arm64) installers and publishes them
-as a GitHub release. Pull requests run the same build without publishing.
+Or, without a local checkout: **Actions → Release → Run workflow**, tick **publish**. That releases
+the version currently in `package.json` (bump it first) and tags the commit.
+
+The workflow creates a draft release, builds the macOS (arm64 + x64) and Windows (x64 + arm64)
+installers into it, then publishes it. Pull requests run the same build without publishing.
