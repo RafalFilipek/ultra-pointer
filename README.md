@@ -28,8 +28,7 @@ icon to change:
 - hand size, animation speed and how eagerly the hand switches edges (with a live preview),
 - keep the same hand when switching edges, idle wobble, drop shadow,
 - **poke on click**: the hand jabs at the cursor every time you press a mouse button,
-- auto-hide when the mouse stops for a while, and open at login,
-- automatic update checks (on by default) and a **Check now** button.
+- auto-hide when the mouse stops for a while, and open at login.
 
 Settings are saved to `settings.json` in the app's user-data folder.
 
@@ -47,7 +46,11 @@ runs while the option is on. Only mouse button presses are used; nothing is reco
 
 ### Updates
 
-The installed app checks [Releases](https://github.com/RafalFilipek/ultra-pointer/releases) a few
+> **Currently switched off.** The repository is private, so the app can't read its release feed.
+> Update checks are built in but disabled by `UPDATES_ENABLED` in `updater.js`; flip it to `true`
+> once releases are publicly reachable. Until then, install new versions by hand from Releases.
+
+When enabled, the installed app checks [Releases](https://github.com/RafalFilipek/ultra-pointer/releases) a few
 seconds after launch and then every 6 hours (turn it off in Settings → Updates; **Check for updates**
 in the tray menu works either way).
 

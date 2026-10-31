@@ -5,7 +5,7 @@
 // mode 'notify' (macOS): the app is only ad-hoc signed and Squirrel.Mac refuses
 //   updates that aren't signed with a Developer ID, so we only check, tell the
 //   user, and open the release page for a manual download.
-// mode 'off': development builds and other platforms.
+// mode 'off': development builds, other platforms, and whenever UPDATES_ENABLED is false.
 //
 // status: 'off' | 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'error'
 
@@ -13,8 +13,13 @@ const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 const FIRST_CHECK_DELAY_MS = 15 * 1000;
 const RELEASES_URL = 'https://github.com/RafalFilipek/ultra-pointer/releases';
 
-function updateMode(platform, isPackaged) {
-  if (!isPackaged) return 'off';
+// Off while the repository (and so its releases feed) is private: the app can't
+// read private releases without a token, and shipping a token in the app would leak it.
+// Flip to true once releases are publicly reachable.
+const UPDATES_ENABLED = false;
+
+function updateMode(platform, isPackaged, enabled = UPDATES_ENABLED) {
+  if (!enabled || !isPackaged) return 'off';
   if (platform === 'win32') return 'install';
   if (platform === 'darwin') return 'notify';
   return 'off';
@@ -129,4 +134,4 @@ class Updater {
   dispose() { this.setAutoCheck(false); }
 }
 
-module.exports = { Updater, updateMode, CHECK_EVERY_MS, FIRST_CHECK_DELAY_MS };
+module.exports = { Updater, updateMode, UPDATES_ENABLED, CHECK_EVERY_MS, FIRST_CHECK_DELAY_MS };

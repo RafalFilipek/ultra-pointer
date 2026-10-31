@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { EventEmitter } = require('events');
-const { Updater, updateMode, FIRST_CHECK_DELAY_MS, CHECK_EVERY_MS } = require('../updater');
+const { Updater, updateMode, UPDATES_ENABLED, FIRST_CHECK_DELAY_MS, CHECK_EVERY_MS } = require('../updater');
 const { sanitize } = require('../settings');
 
 function fakeAutoUpdater({ fail = false } = {}) {
@@ -25,10 +25,16 @@ function fakeTimers() {
 const tick = () => new Promise((r) => setImmediate(r));
 
 test('update mode: install on Windows, notify on macOS, off in development', () => {
-  assert.equal(updateMode('win32', true), 'install');
-  assert.equal(updateMode('darwin', true), 'notify');
-  assert.equal(updateMode('linux', true), 'off');
-  assert.equal(updateMode('win32', false), 'off');
+  assert.equal(updateMode('win32', true, true), 'install');
+  assert.equal(updateMode('darwin', true, true), 'notify');
+  assert.equal(updateMode('linux', true, true), 'off');
+  assert.equal(updateMode('win32', false, true), 'off');
+});
+
+test('update checks stay off while the releases feed is private', () => {
+  assert.equal(UPDATES_ENABLED, false);
+  assert.equal(updateMode('win32', true), 'off');
+  assert.equal(updateMode('darwin', true), 'off');
 });
 
 test('autoUpdate is on by default', () => {

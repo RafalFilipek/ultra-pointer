@@ -144,12 +144,9 @@ api.onPokeStatus(renderPokeStatus);
 // ---------- updates ----------
 
 function renderUpdate(u) {
-  if (u.mode === 'off') {
-    $('autoUpdate').closest('label').hidden = true;
-    $('update-btn').hidden = true;
-    $('update-msg').textContent = 'Updates are checked only in the installed app.';
-    return;
-  }
+  // Dev builds, Linux, and while update checks are switched off in updater.js.
+  $('updates-card').hidden = u.mode === 'off';
+  if (u.mode === 'off') return;
   $('update-how').textContent = u.mode === 'install'
     ? 'New versions download in the background and install when you quit Ultra Pointer.'
     : 'You get a notification with a download link when a new version is out.';
