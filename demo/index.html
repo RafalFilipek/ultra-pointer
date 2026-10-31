@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,16 +24,16 @@
 <canvas id="c"></canvas>
 <div class="panel">
   <h1>Ultra Pointer</h1>
-  <p>Wciśnij <kbd>H</kbd> (albo przycisk), żeby wysunąć rękę. Ruszaj myszą po ekranie; przy innej krawędzi ręka się chowa i wychodzi nowa.</p>
-  <p>Teraz: <span id="style">schowana</span></p>
-  <button id="toggle">Pokaż rękę</button>
+  <p>Press <kbd>H</kbd> (or the button) to bring out the hand, then move the mouse around. Near another edge the hand hides and a new one comes out from there.</p>
+  <p>Now: <span id="style">hidden</span></p>
+  <button id="toggle">Show hand</button>
 </div>
 <script src="../renderer/sprites.js"></script>
 <script src="../renderer/hand-engine.js"></script>
 <script>
   const engine = new HandEngine(document.getElementById('c'), { spriteBase: '../assets/sprites/' });
   const btn = document.getElementById('toggle'), label = document.getElementById('style');
-  const sync = () => { btn.textContent = engine.active ? 'Schowaj rękę' : 'Pokaż rękę'; if (!engine.active) label.textContent = 'schowana'; };
+  const sync = () => { btn.textContent = engine.active ? 'Hide hand' : 'Show hand'; if (!engine.active) label.textContent = 'hidden'; };
   engine.onStyleChange = (s) => { label.textContent = s.name; };
   const move = (e) => engine.setCursor(e.clientX, e.clientY);
   addEventListener('pointermove', move);
