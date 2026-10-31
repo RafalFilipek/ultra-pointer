@@ -24,7 +24,7 @@
 <canvas id="c"></canvas>
 <div class="panel">
   <h1>Ultra Pointer</h1>
-  <p>Press <kbd>H</kbd> (or the button) to bring out the hand, then move the mouse around. Near another edge the hand hides and a new one comes out from there.</p>
+  <p>Press <kbd>H</kbd> (or the button) to bring out the hand, then move the mouse around. Near another edge the hand hides and a new one comes out from there. Click to make it poke.</p>
   <p>Now: <span id="style">hidden</span></p>
   <button id="toggle">Show hand</button>
 </div>
@@ -37,7 +37,7 @@
   engine.onStyleChange = (s) => { label.textContent = s.name; };
   const move = (e) => engine.setCursor(e.clientX, e.clientY);
   addEventListener('pointermove', move);
-  addEventListener('pointerdown', move);
+  addEventListener('pointerdown', (e) => { move(e); engine.poke(); });
   addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'h') { engine.toggle(); sync(); } });
   btn.addEventListener('click', (e) => { e.stopPropagation(); engine.toggle(); sync(); });
 </script>

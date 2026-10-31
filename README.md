@@ -27,9 +27,22 @@ icon to change:
 - which hands are in the random mix,
 - hand size, animation speed and how eagerly the hand switches edges (with a live preview),
 - keep the same hand when switching edges, idle wobble, drop shadow,
+- **poke on click**: the hand jabs at the cursor every time you press a mouse button,
 - auto-hide when the mouse stops for a while, and open at login.
 
 Settings are saved to `settings.json` in the app's user-data folder.
+
+### Poke on click and macOS permissions
+
+Apps can't see clicks outside their own windows, so poke on click uses a system-wide input hook
+([uiohook-napi](https://github.com/SnosMe/uiohook-napi)). It is off by default and the hook only
+runs while the option is on. Only mouse button presses are used; nothing is recorded or sent anywhere.
+
+- **macOS** asks for **Accessibility** access the first time you turn it on. Allow Ultra Pointer in
+  System Settings → Privacy & Security → Accessibility; poking starts on its own once access is granted.
+  The app isn't signed with a developer ID yet, so after installing a new version macOS may treat it
+  as a different app: if poking stops working, remove Ultra Pointer from that list and add it again.
+- **Windows** needs no extra permission.
 
 ## Develop
 
@@ -46,6 +59,7 @@ npm run dist       # build installers locally into dist/
 
 - `main.js`: overlay windows, global shortcut, tray, settings window, cursor polling (60 fps).
 - `settings.js`: settings defaults, validation and storage.
+- `click-hook.js`: global mouse-click listener for poke on click (macOS permission handling included).
 - `renderer/hand-engine.js`: the hand itself (edge choice, slide in/out, aiming, style swaps).
 - `renderer/settings.html`, `settings-ui.js`, `settings.css`: the settings window.
 - `assets/sprites/`: hand sprites plus `hands.json` with each sprite's stick end and fingertip.

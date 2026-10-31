@@ -7,6 +7,8 @@ window.ultraPointer.onState(({ x, y, active }) => {
   engine.setActive(active);
 });
 
+window.ultraPointer.onPoke(() => engine.poke());
+
 window.ultraPointer.onSettings((s) => {
   engine.setOptions({
     handHeight: s.handSize,

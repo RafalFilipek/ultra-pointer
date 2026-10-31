@@ -12,6 +12,7 @@ const DEFAULTS = {
   wobble: true,           // gentle idle wobble
   shadow: true,           // drop shadow
   autoHideSeconds: 0,     // hide when the mouse is still this long (0 = never)
+  pokeOnClick: false,     // the hand jabs at the cursor on every mouse click (needs a global input hook)
   launchAtLogin: false,
 };
 

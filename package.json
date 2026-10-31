@@ -18,6 +18,7 @@
   "build": {
     "appId": "com.rafalfilipek.ultrapointer",
     "productName": "Ultra Pointer",
+    "npmRebuild": false,
     "directories": {
       "buildResources": "build",
       "output": "dist"
@@ -25,6 +26,7 @@
     "files": [
       "main.js",
       "settings.js",
+      "click-hook.js",
       "preload.js",
       "renderer/**",
       "assets/sprites/**",
@@ -86,5 +88,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/RafalFilipek/ultra-pointer.git"
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
   }
 }
