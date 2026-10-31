@@ -1,22 +1,90 @@
 {
   "name": "ultra-pointer",
-  "version": "0.1.0",
-  "description": "Ręka na patyku, która wysuwa się z krawędzi ekranu i pokazuje palcem na kursor.",
+  "version": "0.2.0",
+  "description": "A hand on a stick that slides in from the screen edge and points at your cursor.",
   "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "demo": "npx --yes serve .",
+    "dist": "electron-builder --publish never",
+    "release": "electron-builder --publish always",
+    "test": "node --test test/*.test.js"
   },
   "devDependencies": {
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.ultrapointer.app",
+    "appId": "com.rafalfilipek.ultrapointer",
     "productName": "Ultra Pointer",
-    "files": ["main.js", "preload.js", "renderer/**", "assets/sprites/**", "assets/tray.png"],
-    "mac": { "target": "dmg", "extendInfo": { "LSUIElement": true } },
-    "win": { "target": "nsis" }
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "settings.js",
+      "preload.js",
+      "renderer/**",
+      "assets/sprites/**",
+      "assets/tray.png",
+      "assets/tray@2x.png"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "identity": "-",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "dmg": {
+      "artifactName": "Ultra-Pointer-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "Ultra-Pointer-${version}-windows-${arch}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "RafalFilipek",
+        "repo": "ultra-pointer",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "author": "Rafał Filipek",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RafalFilipek/ultra-pointer.git"
   }
 }
