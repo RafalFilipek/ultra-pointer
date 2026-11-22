@@ -1,5 +1,7 @@
 # Ultra Pointer
 
+![Ultra Pointer: hands on sticks slide in from the screen edges and point at the cursor](docs/demo.gif)
+
 A hand on a stick that slides in from the screen edge nearest to your cursor and points at it.
 Move the mouse and, when another edge gets clearly closer, the hand ducks away and a different
 one pops out from there. 14 hand styles: realistic, robot, zombie, fur, skeleton, pixel art,
@@ -46,11 +48,7 @@ runs while the option is on. Only mouse button presses are used; nothing is reco
 
 ### Updates
 
-> **Currently switched off.** The repository is private, so the app can't read its release feed.
-> Update checks are built in but disabled by `UPDATES_ENABLED` in `updater.js`; flip it to `true`
-> once releases are publicly reachable. Until then, install new versions by hand from Releases.
-
-When enabled, the installed app checks [Releases](https://github.com/RafalFilipek/ultra-pointer/releases) a few
+The installed app checks [Releases](https://github.com/RafalFilipek/ultra-pointer/releases) a few
 seconds after launch and then every 6 hours (turn it off in Settings → Updates; **Check for updates**
 in the tray menu works either way).
 
@@ -62,7 +60,7 @@ in the tray menu works either way).
   notarized, switching macOS to real auto-install is a one-line change in `updater.js`.
 
 Updates are read from the public GitHub release feed (`latest.yml` / `latest-mac.yml`, which the release
-workflow already uploads), so they only work while the releases are publicly reachable.
+workflow uploads). `UPDATES_ENABLED` in `updater.js` is the master switch.
 
 ## Develop
 
@@ -73,7 +71,7 @@ npm test           # unit tests + syntax check
 npm run dist       # build installers locally into dist/
 ```
 
-`demo/index.html` is a browser-only demo of the hand engine (serve the repo root and open it).
+`demo/index.html` is a browser-only demo of the hand engine: run `npm run demo` and open `/demo/`.
 
 ### Project layout
 
@@ -101,3 +99,7 @@ the version currently in `package.json` (bump it first) and tags the commit.
 
 The workflow creates a draft release, builds the macOS (arm64 + x64) and Windows (x64 + arm64)
 installers into it, then publishes it. Pull requests run the same build without publishing.
+
+## License
+
+[MIT](LICENSE) © Rafał Filipek

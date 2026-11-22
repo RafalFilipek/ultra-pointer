@@ -31,10 +31,11 @@ test('update mode: install on Windows, notify on macOS, off in development', () 
   assert.equal(updateMode('win32', false, true), 'off');
 });
 
-test('update checks stay off while the releases feed is private', () => {
-  assert.equal(UPDATES_ENABLED, false);
-  assert.equal(updateMode('win32', true), 'off');
-  assert.equal(updateMode('darwin', true), 'off');
+test('update checks are on for packaged macOS and Windows builds', () => {
+  assert.equal(UPDATES_ENABLED, true);
+  assert.equal(updateMode('win32', true), 'install');
+  assert.equal(updateMode('darwin', true), 'notify');
+  assert.equal(updateMode('win32', false), 'off');
 });
 
 test('autoUpdate is on by default', () => {
