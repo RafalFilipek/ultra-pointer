@@ -1,6 +1,6 @@
 {
   "name": "ultra-pointer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A hand on a stick that slides in from the screen edge and points at your cursor.",
   "main": "main.js",
   "private": true,
@@ -93,5 +93,6 @@
   "dependencies": {
     "electron-updater": "^6.8.11",
     "uiohook-napi": "^1.5.5"
-  }
+  },
+  "license": "MIT"
 }

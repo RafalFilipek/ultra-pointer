@@ -144,7 +144,7 @@ api.onPokeStatus(renderPokeStatus);
 // ---------- updates ----------
 
 function renderUpdate(u) {
-  // Dev builds, Linux, and while update checks are switched off in updater.js.
+  // Dev builds, Linux, and whenever update checks are switched off in updater.js.
   $('updates-card').hidden = u.mode === 'off';
   if (u.mode === 'off') return;
   $('update-how').textContent = u.mode === 'install'

@@ -13,10 +13,9 @@ const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 const FIRST_CHECK_DELAY_MS = 15 * 1000;
 const RELEASES_URL = 'https://github.com/RafalFilipek/ultra-pointer/releases';
 
-// Off while the repository (and so its releases feed) is private: the app can't
-// read private releases without a token, and shipping a token in the app would leak it.
-// Flip to true once releases are publicly reachable.
-const UPDATES_ENABLED = false;
+// Master switch for update checks. They read the public GitHub releases feed, so
+// they only work while the repository's releases are publicly reachable.
+const UPDATES_ENABLED = true;
 
 function updateMode(platform, isPackaged, enabled = UPDATES_ENABLED) {
   if (!enabled || !isPackaged) return 'off';
